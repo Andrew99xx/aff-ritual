@@ -1,0 +1,262 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  Id        Int       @id @default(autoincrement())
+  Username  String?   @db.VarChar(255)
+  Password  String?   @db.VarChar(255)
+  createdAt DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model BankInfo {
+  id         Int               @id @default(autoincrement())
+  bankName   String           @db.VarChar(255)
+  accNum     String           @db.VarChar(50)
+  accType    String?
+  ifscCode   String           @db.VarChar(20)
+  createdAt  DateTime?         @default(now()) @db.Timestamp(0)
+  updatedAt  DateTime?         @default(now()) @db.Timestamp(0)
+  ClubLeader ClubLeader[]
+  ClubMember ClubMember[]
+  Student    Student[]
+  Trainer    Trainer[]
+}
+
+model ClubLeader {
+  Id             Int           @id @default(autoincrement())
+  studentId      Int?
+  personalInfoId Int?
+  bankInfoId     Int?
+  coins          Int?         @default(0)
+  createdAt      DateTime?     @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime?     @default(now()) @db.Timestamp(0)
+  Student        Student?      @relation(fields: [studentId], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_1")
+  PersonalInfo   PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_2")
+  BankInfo       BankInfo?     @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_3")
+  ClubMember     ClubMember[]
+  passiveSale    passiveSale[]
+
+  @@index([bankInfoId], map: "bankInfoId")
+  @@index([personalInfoId], map: "personalInfoId")
+  @@index([studentId], map: "studentId")
+}
+
+model ClubMember {
+  id             Int           @id @default(autoincrement())
+  personalInfoId Int?
+  bankInfoId     Int?
+  leaderId       Int?
+  coins          Int?
+  createdAt      DateTime?     @default(now()) @db.Timestamp(0)
+  updatedAt      DateTime?     @default(now()) @db.Timestamp(0)
+  PersonalInfo   PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_1")
+  BankInfo       BankInfo?     @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_2")
+  ClubLeader     ClubLeader?   @relation(fields: [leaderId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_3")
+
+  @@index([bankInfoId], map: "bankInfoId")
+  @@index([leaderId], map: "leaderId")
+  @@index([personalInfoId], map: "personalInfoId")
+}
+
+model Course {
+  Id                 Int                  @id @default(autoincrement())
+  courseName         String?              @db.VarChar(255)
+  courseImg          String?              @db.VarChar(255)
+  startDate          DateTime?            @db.Date
+  endDate            DateTime?            @db.Date
+  upfrontFees        Int?             
+  price              Int?             
+  trainerID          Int?
+  createdAt          DateTime?            @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime?            @default(now()) @db.Timestamp(0)
+  Trainer            Trainer?             @relation(fields: [trainerID], references: [trainerID], onDelete: NoAction, onUpdate: NoAction, map: "course_ibfk_1")
+  CourseStudentAssoc CourseStudentAssoc[]
+  CourseTrainerAssoc CourseTrainerAssoc[]
+  Installment        Installment[]
+  Module             Module[]
+
+  @@index([trainerID], map: "trainerID")
+}
+
+model CourseStudentAssoc {
+  ID                Int       @id @default(autoincrement())
+  courseId          Int?
+  studentID         Int?
+  TransactionID     String?   @db.VarChar(255)
+  TransactionProof  String?   @db.VarChar(255)
+  TransactionAmount Decimal?  @db.Decimal(10, 2)
+  createdAt         DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt         DateTime? @default(now()) @db.Timestamp(0)
+  Course            Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "coursestudentassoc_ibfk_1")
+  Student           Student?  @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "coursestudentassoc_ibfk_2")
+
+  @@index([courseId], map: "courseId")
+  @@index([studentID], map: "studentID")
+}
+
+model CourseTrainerAssoc {
+  ID        Int       @id @default(autoincrement())
+  courseId  Int?
+  trainerID Int?
+  createdAt DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt DateTime? @default(now()) @db.Timestamp(0)
+  Course    Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "coursetrainerassoc_ibfk_1")
+  Trainer   Trainer?  @relation(fields: [trainerID], references: [trainerID], onDelete: NoAction, onUpdate: NoAction, map: "coursetrainerassoc_ibfk_2")
+
+  @@index([courseId], map: "courseId")
+  @@index([trainerID], map: "trainerID")
+}
+
+model Installment {
+  InstallmentID           Int                       @id @default(autoincrement())
+  CourseID                Int?
+  InstallmentNumber       Int?
+  InstallmentAmount       Decimal?                  @db.Decimal(10, 2)
+  dueDate                 DateTime?                 @db.Date
+  createdAt               DateTime?                 @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime?                 @default(now()) @db.Timestamp(0)
+  Course                  Course?                   @relation(fields: [CourseID], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "installment_ibfk_1")
+  StudentInstallmentTable StudentInstallmentTable[]
+
+  @@index([CourseID], map: "CourseID")
+}
+
+model Module {
+  courseId      Int?
+  moduleID      Int       @id @default(autoincrement())
+  Modulename    String?   @db.VarChar(255)
+  moduleContent String?   @db.Text
+  moduleDate    DateTime? @db.Date
+  isCompleted   Boolean?
+  createdAt     DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime? @default(now()) @db.Timestamp(0)
+  Course        Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "module_ibfk_1")
+
+  @@index([courseId], map: "courseId")
+}
+
+model PersonalInfo {
+  id            Int          @id @default(autoincrement())
+  firstname     String       @db.VarChar(255)
+  lastname      String      @db.VarChar(255)
+  address       String      @db.Text
+  mobile        String      @db.VarChar(20)
+  email         String      @db.VarChar(255)
+  dob           DateTime    @db.Date
+  Aadhaarnumber String      @db.VarChar(20)
+  pannumber     String      @db.VarChar(20)
+  createdAt     DateTime    @default(now()) @db.Timestamp(0)
+  updatedAt     DateTime    @default(now()) @db.Timestamp(0)
+  ClubLeader    ClubLeader[]
+  ClubMember    ClubMember[]
+  Student       Student[]
+  Trainer       Trainer[]
+}
+
+model Student {
+  studentID               Int                       @id @default(autoincrement())
+  personalInfoId          Int?
+  bankInfoId              Int?
+  referID                 Int?
+  createdAt               DateTime?                 @default(now()) @db.Timestamp(0)
+  updatedAt               DateTime?                 @default(now()) @db.Timestamp(0)
+  ClubLeader              ClubLeader[]
+  CourseStudentAssoc      CourseStudentAssoc[]
+  PersonalInfo            PersonalInfo?             @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "student_ibfk_1")
+  BankInfo                BankInfo?                 @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "student_ibfk_2")
+  StudentInstallmentTable StudentInstallmentTable[]
+  directSale              directSale[]
+  passiveSale             passiveSale[]
+
+  @@index([bankInfoId], map: "bankInfoId")
+  @@index([personalInfoId], map: "personalInfoId")
+}
+
+model StudentInstallmentTable {
+  studentID        Int
+  installmentId    Int
+  Status           StudentInstallmentTable_Status?
+  paymentDate      DateTime?                       @db.Date
+  dueDate          DateTime?                       @db.Date
+  paymentAmt       Decimal?                        @db.Decimal(10, 2)
+  transactionID    String?                         @db.VarChar(255)
+  transactionProof String?                         @db.VarChar(255)
+  dueAmt           Decimal?                        @db.Decimal(10, 2)
+  createdAt        DateTime?                       @default(now()) @db.Timestamp(0)
+  updatedAt        DateTime?                       @default(now()) @db.Timestamp(0)
+  Student          Student                         @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "studentinstallmenttable_ibfk_1")
+  Installment      Installment                     @relation(fields: [installmentId], references: [InstallmentID], onDelete: NoAction, onUpdate: NoAction, map: "studentinstallmenttable_ibfk_2")
+
+  @@id([studentID, installmentId])
+  @@index([installmentId], map: "installmentId")
+}
+
+model SuperAdmin {
+  Id        Int       @id @default(autoincrement())
+  Username  String?   @db.VarChar(255)
+  Password  String?   @db.VarChar(255)
+  createdAt DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt DateTime? @default(now()) @db.Timestamp(0)
+}
+
+model Trainer {
+  trainerID          Int                  @id @default(autoincrement())
+  personalInfoId     Int?
+  bankInfoId         Int?
+  TransactionID      String?              @db.VarChar(255)
+  TransactionProof   String?              @db.VarChar(255)
+  createdAt          DateTime?            @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime?            @default(now()) @db.Timestamp(0)
+  Course             Course[]
+  CourseTrainerAssoc CourseTrainerAssoc[]
+  PersonalInfo       PersonalInfo?        @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "trainer_ibfk_1")
+  BankInfo           BankInfo?            @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "trainer_ibfk_2")
+
+  @@index([bankInfoId], map: "bankInfoId")
+  @@index([personalInfoId], map: "personalInfoId")
+}
+
+model directSale {
+  id           Int       @id @default(autoincrement())
+  teamEntityID Int?
+  Amount       Decimal?  @db.Decimal(10, 2)
+  studentID    Int?
+  createdAt    DateTime? @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime? @default(now()) @db.Timestamp(0)
+  Student      Student?  @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "directsale_ibfk_1")
+
+  @@index([studentID], map: "studentID")
+}
+
+
+
+model passiveSale {
+  id           Int         @id @default(autoincrement())
+  teamLeaderID Int?
+  Amount       Decimal?    @db.Decimal(10, 2)
+  studentID    Int?
+  createdAt    DateTime?   @default(now()) @db.Timestamp(0)
+  updatedAt    DateTime?   @default(now()) @db.Timestamp(0)
+  ClubLeader   ClubLeader? @relation(fields: [teamLeaderID], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_1")
+  Student      Student?    @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_2")
+
+  @@index([studentID], map: "studentID")
+  @@index([teamLeaderID], map: "teamLeaderID")
+}
+
+enum StudentInstallmentTable_Status {
+  pending
+  paid
+}
+
+enum BankInfo_accType {
+  saving
+  current
+}
