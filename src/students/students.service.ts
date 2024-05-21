@@ -37,7 +37,7 @@ export class StudentService {
 
       const clubLeaderDetails = await this.prismaservice.clubLeader.create({
         data: {
-          studentId: studentDetails.studentID,
+          studentId: studentDetails.id,
           bankInfoId: bankAndPersonalInfo.bankInfo,
           personalInfoId: bankAndPersonalInfo.personalInfo,
         },
@@ -46,7 +46,7 @@ export class StudentService {
       await this.prismaservice.courseStudentAssoc.create({
         data: {
           courseId: +user.courseID,
-          studentID: studentDetails.studentID,
+          studentID: studentDetails.id,
         },
       });
       
@@ -58,7 +58,7 @@ export class StudentService {
 
       await this.createStudentInstallmentTables(
         installments,
-        studentDetails.studentID,
+        studentDetails.id,
       );
       const course = await this.prismaservice.course.findUnique({
         where: {
@@ -80,7 +80,7 @@ export class StudentService {
       if (teamLeaderOrMember.leader) {
         await this.createDirectSale(
           +user.referID,
-          studentDetails.studentID,
+          studentDetails.id,
           course.upfrontFees * 0.4,
         );
         await this.updateCoin(
@@ -97,12 +97,12 @@ export class StudentService {
         });
         await this.createDirectSale(
           +user.referID,
-          studentDetails.studentID,
+          studentDetails.id,
           course.upfrontFees * 0.2,
         );
         await this.createPassiveSale(
           teamMember.leaderId,
-          studentDetails.studentID,
+          studentDetails.id,
           course.upfrontFees * 0.2,
         );
         await this.updateCoin(
@@ -157,7 +157,7 @@ export class StudentService {
   ) {
     if (entityType === UserType.TEAM_LEADER) {
       const clubLeader = await this.prismaservice.clubLeader.findUnique({
-        where: { Id: entityId },
+        where: { id: entityId },
         select: { coins: true },
       });
 
@@ -169,7 +169,7 @@ export class StudentService {
 
       // Update the coins field
       await this.prismaservice.clubLeader.update({
-        where: { Id: entityId },
+        where: { id: entityId },
         data: { coins: newCoins },
       });
     } else if (entityType === UserType.TEAM_MEMBER) {
@@ -198,7 +198,7 @@ export class StudentService {
   }
   async checkIfReferIDisTeamLeader(referID: number) {
     const isLeader = await this.prismaservice.clubLeader.findUnique({
-      where: { Id: referID },
+      where: { id: referID },
     });
 
     const isMember = await this.prismaservice.clubMember.findUnique({
@@ -221,7 +221,8 @@ export class StudentService {
       const studentInstallmentTable =
         await this.prismaservice.studentInstallmentTable.create({
           data: {
-            studentID,
+            // studentID,
+            studentID:studentID,
             installmentId: installment.InstallmentID,
             paymentAmt: installment.InstallmentAmount,
             dueDate: installment.dueDate,

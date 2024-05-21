@@ -9,7 +9,7 @@ export class StudentsController {
 
   @Post('register')
   async register(@Body() user: UserDto, @Res() res: Response) {
-    await this.studentService.register(user, res);
+    return await this.studentService.register(user, res);
   }
 
 

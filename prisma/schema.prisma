@@ -30,14 +30,14 @@ model BankInfo {
 }
 
 model ClubLeader {
-  Id             Int           @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   studentId      Int?
   personalInfoId Int?
   bankInfoId     Int?
   coins          Int?         @default(0)
   createdAt      DateTime?     @default(now()) @db.Timestamp(0)
   updatedAt      DateTime?     @default(now()) @db.Timestamp(0)
-  Student        Student?      @relation(fields: [studentId], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_1")
+  Student        Student?      @relation(fields: [studentId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_1")
   PersonalInfo   PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_2")
   BankInfo       BankInfo?     @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubleader_ibfk_3")
   ClubMember     ClubMember[]
@@ -58,7 +58,7 @@ model ClubMember {
   updatedAt      DateTime?     @default(now()) @db.Timestamp(0)
   PersonalInfo   PersonalInfo? @relation(fields: [personalInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_1")
   BankInfo       BankInfo?     @relation(fields: [bankInfoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_2")
-  ClubLeader     ClubLeader?   @relation(fields: [leaderId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_3")
+  ClubLeader     ClubLeader?   @relation(fields: [leaderId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "clubmember_ibfk_3")
 
   @@index([bankInfoId], map: "bankInfoId")
   @@index([leaderId], map: "leaderId")
@@ -76,7 +76,7 @@ model Course {
   trainerID          Int?
   createdAt          DateTime?            @default(now()) @db.Timestamp(0)
   updatedAt          DateTime?            @default(now()) @db.Timestamp(0)
-  Trainer            Trainer?             @relation(fields: [trainerID], references: [trainerID], onDelete: NoAction, onUpdate: NoAction, map: "course_ibfk_1")
+  Trainer            Trainer?             @relation(fields: [trainerID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "course_ibfk_1")
   CourseStudentAssoc CourseStudentAssoc[]
   CourseTrainerAssoc CourseTrainerAssoc[]
   Installment        Installment[]
@@ -95,7 +95,7 @@ model CourseStudentAssoc {
   createdAt         DateTime? @default(now()) @db.Timestamp(0)
   updatedAt         DateTime? @default(now()) @db.Timestamp(0)
   Course            Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "coursestudentassoc_ibfk_1")
-  Student           Student?  @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "coursestudentassoc_ibfk_2")
+  Student           Student?  @relation(fields: [studentID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "coursestudentassoc_ibfk_2")
 
   @@index([courseId], map: "courseId")
   @@index([studentID], map: "studentID")
@@ -108,7 +108,7 @@ model CourseTrainerAssoc {
   createdAt DateTime? @default(now()) @db.Timestamp(0)
   updatedAt DateTime? @default(now()) @db.Timestamp(0)
   Course    Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "coursetrainerassoc_ibfk_1")
-  Trainer   Trainer?  @relation(fields: [trainerID], references: [trainerID], onDelete: NoAction, onUpdate: NoAction, map: "coursetrainerassoc_ibfk_2")
+  Trainer   Trainer?  @relation(fields: [trainerID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "coursetrainerassoc_ibfk_2")
 
   @@index([courseId], map: "courseId")
   @@index([trainerID], map: "trainerID")
@@ -161,7 +161,7 @@ model PersonalInfo {
 }
 
 model Student {
-  studentID               Int                       @id @default(autoincrement())
+  id               Int                       @id @default(autoincrement())
   personalInfoId          Int?
   bankInfoId              Int?
   referID                 Int?
@@ -191,7 +191,7 @@ model StudentInstallmentTable {
   dueAmt           Decimal?                        @db.Decimal(10, 2)
   createdAt        DateTime?                       @default(now()) @db.Timestamp(0)
   updatedAt        DateTime?                       @default(now()) @db.Timestamp(0)
-  Student          Student                         @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "studentinstallmenttable_ibfk_1")
+  Student          Student                         @relation(fields: [studentID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "studentinstallmenttable_ibfk_1")
   Installment      Installment                     @relation(fields: [installmentId], references: [InstallmentID], onDelete: NoAction, onUpdate: NoAction, map: "studentinstallmenttable_ibfk_2")
 
   @@id([studentID, installmentId])
@@ -207,7 +207,7 @@ model SuperAdmin {
 }
 
 model Trainer {
-  trainerID          Int                  @id @default(autoincrement())
+  id          Int                  @id @default(autoincrement())
   personalInfoId     Int?
   bankInfoId         Int?
   TransactionID      String?              @db.VarChar(255)
@@ -230,7 +230,7 @@ model directSale {
   studentID    Int?
   createdAt    DateTime? @default(now()) @db.Timestamp(0)
   updatedAt    DateTime? @default(now()) @db.Timestamp(0)
-  Student      Student?  @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "directsale_ibfk_1")
+  Student      Student?  @relation(fields: [studentID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "directsale_ibfk_1")
 
   @@index([studentID], map: "studentID")
 }
@@ -244,13 +244,20 @@ model passiveSale {
   studentID    Int?
   createdAt    DateTime?   @default(now()) @db.Timestamp(0)
   updatedAt    DateTime?   @default(now()) @db.Timestamp(0)
-  ClubLeader   ClubLeader? @relation(fields: [teamLeaderID], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_1")
-  Student      Student?    @relation(fields: [studentID], references: [studentID], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_2")
+  ClubLeader   ClubLeader? @relation(fields: [teamLeaderID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_1")
+  Student      Student?    @relation(fields: [studentID], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "passivesale_ibfk_2")
 
   @@index([studentID], map: "studentID")
   @@index([teamLeaderID], map: "teamLeaderID")
 }
-
+model otp {
+  uid        Int      @id @default(autoincrement())
+  otp        Int
+  isVerified Boolean
+  expiredAt  DateTime
+  source     String
+  souretype  String
+}
 enum StudentInstallmentTable_Status {
   pending
   paid
