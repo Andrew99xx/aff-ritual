@@ -134,7 +134,7 @@ model Module {
   Modulename    String?   @db.VarChar(255)
   moduleContent String?   @db.Text
   moduleDate    DateTime? @db.Date
-  isCompleted   Boolean?
+  isCompleted   Boolean?  @default(false)
   createdAt     DateTime? @default(now()) @db.Timestamp(0)
   updatedAt     DateTime? @default(now()) @db.Timestamp(0)
   Course        Course?   @relation(fields: [courseId], references: [Id], onDelete: NoAction, onUpdate: NoAction, map: "module_ibfk_1")
