@@ -119,7 +119,8 @@ export class StudentService {
       }
       return res.status(HttpStatus.CREATED).send({
         message: 'User registered successfully',
-        data: { studentDetails, clubLeaderDetails },
+        // data: { studentDetails, clubLeaderDetails },
+        data: this.authservice.createAccessToken(studentDetails.id,UserType.STUDENT)
       });
     } catch (error) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({

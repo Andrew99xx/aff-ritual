@@ -1,4 +1,6 @@
 import { HttpStatus, Injectable, Res } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { Response } from 'express';
 import { LoginOTPDTO, OTPDto, verifyOtpDTO } from 'src/dto/auth.dto';
 import { UserDto } from 'src/dto/user.dto';
@@ -8,8 +10,18 @@ import { PrismaService } from 'src/prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
+  async validateUser(source: string) {
+    return await this.prisma.personalInfo.findFirst({
+      where: {
+        OR: [{ email: source }, { mobile: source }],
+      },
+    });
+  }
   async register(user: UserDto, usertype: UserType, @Res() res: Response) {
     if (!user.email && !user.mobile) {
       res.status(HttpStatus.BAD_REQUEST).send({
@@ -66,20 +78,24 @@ export class AuthService {
 
   async login(body: LoginOTPDTO, res: Response) {
     const personalInfo = await this.findUser(body.source, res);
+    const verifyOTP: verifyOtpDTO = {
+      otp: body.otp,
+      source: body.source,
+    };
     let user;
     user = await this.prisma.student.findFirst({
       where: {
         personalInfoId: personalInfo.id,
       },
     });
-    let userType = 'student';
+    let userType = UserType.STUDENT;
     if (!user) {
       user = await this.prisma.clubLeader.findFirst({
         where: {
           personalInfoId: personalInfo.id,
         },
       });
-      userType = 'leader';
+      userType = UserType.TEAM_LEADER;
     }
 
     if (!user) {
@@ -88,7 +104,7 @@ export class AuthService {
           personalInfoId: personalInfo.id,
         },
       });
-      userType = 'member';
+      userType = UserType.TEAM_MEMBER;
     }
 
     if (!user) {
@@ -97,7 +113,7 @@ export class AuthService {
           personalInfoId: personalInfo.id,
         },
       });
-      userType = 'trainer';
+      userType = UserType.TRAINER;
     }
 
     if (!user) {
@@ -107,20 +123,25 @@ export class AuthService {
       });
     }
     const isOTPValid = await this.verifyOtp(body);
-    console.log("isOTPValid",isOTPValid)
+    console.log('isOTPValid', isOTPValid);
     if (!isOTPValid.verified) {
-        return res.status(HttpStatus.UNAUTHORIZED).send({
-            message: 'Please provide valid OTP',
-            data: null,
-          });
+      return res.status(HttpStatus.UNAUTHORIZED).send({
+        message: 'Please provide valid OTP',
+        data: null,
+      });
     }
-
-    
+    // this.createAccessToken(user.id,userType)
+    return res.status(HttpStatus.OK).send({
+      message:"Logged in successfully",
+      data:this.createAccessToken(user.id,userType)
+    })
   }
 
-
-
   //-----------------------------xx-------------------------------
+
+  async createAccessToken(userid: number, userType: UserType) {
+    return this.jwtService.sign({ userid, userType });
+  }
   async checkUserExistence(
     adhaar: string,
     pan: string,
@@ -190,84 +211,87 @@ export class AuthService {
     };
   }
 
-  async getOtp(otp:OTPDto){
-    if(!otp.email && !otp.mobile){
-        return { status:HttpStatus.BAD_REQUEST, message:"Please provide email or mobile to get otp"}
+  async getOtp(otp: OTPDto) {
+    if (!otp.email && !otp.mobile) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Please provide email or mobile to get otp',
+      };
     }
-    let generatedOTP
-    if(otp.email){
-        generatedOTP=await this.generateOtp(otp.email, OTPSOURCE.EMAIL)
-        await this.sendOtpToEmail(otp.email,generatedOTP)
+    let generatedOTP;
+    if (otp.email) {
+      generatedOTP = await this.generateOtp(otp.email, OTPSOURCE.EMAIL);
+      await this.sendOtpToEmail(otp.email, generatedOTP);
     }
-    if(otp.mobile){
-        generatedOTP=await this.generateOtp(otp.mobile, OTPSOURCE.MOBILE)
+    if (otp.mobile) {
+      generatedOTP = await this.generateOtp(otp.mobile, OTPSOURCE.MOBILE);
 
-        await this.sendOtpToMobile(otp.mobile, generatedOTP)
+      await this.sendOtpToMobile(otp.mobile, generatedOTP);
     }
-    return { status:HttpStatus.OK, message:"OTP has been generated", data:generatedOTP}
-}
+    return {
+      status: HttpStatus.OK,
+      message: 'OTP has been generated',
+      data: generatedOTP,
+    };
+  }
 
-async generateOtp(source:string, sourceType:OTPSOURCE):Promise<number>{
-    console.log("source", source)
-    const otp= Math.floor(1000 + Math.random() * 9000);
+  async generateOtp(source: string, sourceType: OTPSOURCE): Promise<number> {
+    console.log('source', source);
+    const otp = Math.floor(1000 + Math.random() * 9000);
     const expiredAt = new Date();
     expiredAt.setMinutes(expiredAt.getMinutes() + 20);
-    await this.prisma.otp.create({data:{
-        otp:otp,
-        isVerified:false,
-        source:source,
-        souretype:sourceType,
-        expiredAt:expiredAt
-    }})
-    
-    return otp
-}
+    await this.prisma.otp.create({
+      data: {
+        otp: otp,
+        isVerified: false,
+        source: source,
+        souretype: sourceType,
+        expiredAt: expiredAt,
+      },
+    });
 
-async verifyOtp(otp:verifyOtpDTO){
-    if(!otp.source){
-        return{
-            status:HttpStatus.BAD_REQUEST,
-            message:"Please provide valid source"
-        }
+    return otp;
+  }
+
+  async verifyOtp(otp: verifyOtpDTO) {
+    if (!otp.source) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Please provide valid source',
+      };
     }
-    if(!otp.otp){
-        return{
-            status:HttpStatus.BAD_REQUEST,
-            message:"Please provide OTP"
-        }
+    if (!otp.otp) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Please provide OTP',
+      };
     }
     const unverifiedOtps = await this.prisma.otp.findMany({
-        where: {
-            otp: +otp.otp,
-            source:otp.source,
-            isVerified: false,
-            expiredAt: {
-                gte: new Date() // Select OTPs where expiredAt is greater than or equal to the current time
-            }
-        }
+      where: {
+        otp: +otp.otp,
+        source: otp.source,
+        isVerified: false,
+        expiredAt: {
+          gte: new Date(), // Select OTPs where expiredAt is greater than or equal to the current time
+        },
+      },
     });
-// console.log("unverifiedOtps", unverifiedOtps);
+    // console.log("unverifiedOtps", unverifiedOtps);
 
     if (unverifiedOtps.length > 0) {
-        await this.prisma.otp.update({
-            where: { uid: unverifiedOtps[0].uid }, // Use appropriate unique identifier
-            data: { isVerified: true }
-        });
-        console.log("true")
-        return {verified:true}; 
+      await this.prisma.otp.update({
+        where: { uid: unverifiedOtps[0].uid }, // Use appropriate unique identifier
+        data: { isVerified: true },
+      });
+      console.log('true');
+      return { verified: true };
     }
-    console.log("false")
+    console.log('false');
 
-    return  {verified:false} 
-}
+    return { verified: false };
+  }
 
-async sendOtpToEmail(email,otp){
+  async sendOtpToEmail(email, otp) {}
 
-}
-
-async sendOtpToMobile(mobile, otp){
-
-}
-
-
+  async sendOtpToMobile(mobile, otp) {}
 }
